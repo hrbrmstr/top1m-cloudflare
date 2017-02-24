@@ -122,6 +122,7 @@ $(document).ready(function () {
 
 <p>Let’s take a 1% sample of domains in the Alexa top 1m and see how many have CloudFlare IPv4s in their DNS A records.</p>
 <pre class="r"><code>library(sys)
+library(httr)
 library(iptools)
 library(stringi)
 library(tidyverse)</code></pre>
@@ -170,6 +171,52 @@ if (!file.exists(slookup_fil)) {
 ##   &lt;lgl&gt; &lt;int&gt;      &lt;dbl&gt;   &lt;chr&gt;
 ## 1 FALSE  8714 0.90903401   90.9%
 ## 2  TRUE   872 0.09096599    9.1%</code></pre>
+<p>We can see how many of these are moving through CloudFlare’s infrastructure:</p>
+<pre class="r"><code>s_GET &lt;- safely(GET)
+get_index &lt;- function(x, .pb=NULL) {
+  if (!is.null(pb)) pb$tick()$print()
+  s_GET(x, user_agent(splashr::ua_macos_chrome))
+}
+
+crawl_df &lt;- &quot;crawl.rds&quot;
+if (!file.exists(crawl_df)) {
+  uses_cf &lt;- filter(samp_df, is_cf) 
+  pb &lt;- progress_estimated(nrow(uses_cf))
+  cf_crawl &lt;- mutate(uses_cf, web=map(domain, get_index, pb))
+  write_rds(cf_crawl, &quot;crawl.rds&quot;)
+} else {
+  cf_crawl &lt;- read_rds(crawl_df)  
+}</code></pre>
+<pre class="r"><code>has_header &lt;- function(x, hdr=&quot;cf-&quot;) {
+  
+  if (!is.null(x$result)) {
+    
+    map(x$result$all_headers, &quot;headers&quot;) %&gt;% 
+      map(names) %&gt;% 
+      flatten_chr() %&gt;% 
+      stri_detect_fixed(hdr) %&gt;% 
+      any()
+    
+  } else {
+    NA
+  }
+  
+}
+
+cf_crawl %&gt;% 
+  mutate(
+    has_cache=map_lgl(web, has_header, hdr=&quot;cf-cache-status&quot;),
+    has_ray=map_lgl(web, has_header, hdr=&quot;cf-ray&quot;)
+  ) -&gt; cf_crawl</code></pre>
+<pre class="r"><code>cf_crawl %&gt;% 
+  summarise(
+    pct_ray = sum(has_ray, na.rm=TRUE)/n(),
+    pct_cache = sum(has_cache, na.rm=TRUE)/n()
+  )</code></pre>
+<pre><code>## # A tibble: 1 × 2
+##     pct_ray  pct_cache
+##       &lt;dbl&gt;      &lt;dbl&gt;
+## 1 0.9988532 0.03784404</code></pre>
 
 
 

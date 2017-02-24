@@ -7,6 +7,7 @@ Let's take a 1% sample of domains in the Alexa top 1m and see how many have Clou
 
 ```r
 library(sys)
+library(httr)
 library(iptools)
 library(stringi)
 library(tidyverse)
@@ -90,3 +91,66 @@ count(samp_df, is_cf) %>%
 ## 1 FALSE  8714 0.90903401   90.9%
 ## 2  TRUE   872 0.09096599    9.1%
 ```
+
+We can see how many of these are moving through CloudFlare's infrastructure:
+
+
+```r
+s_GET <- safely(GET)
+get_index <- function(x, .pb=NULL) {
+  if (!is.null(pb)) pb$tick()$print()
+  s_GET(x, user_agent(splashr::ua_macos_chrome))
+}
+
+crawl_df <- "crawl.rds"
+if (!file.exists(crawl_df)) {
+  uses_cf <- filter(samp_df, is_cf) 
+  pb <- progress_estimated(nrow(uses_cf))
+  cf_crawl <- mutate(uses_cf, web=map(domain, get_index, pb))
+  write_rds(cf_crawl, "crawl.rds")
+} else {
+  cf_crawl <- read_rds(crawl_df)  
+}
+```
+
+
+```r
+has_header <- function(x, hdr="cf-") {
+  
+  if (!is.null(x$result)) {
+    
+    map(x$result$all_headers, "headers") %>% 
+      map(names) %>% 
+      flatten_chr() %>% 
+      stri_detect_fixed(hdr) %>% 
+      any()
+    
+  } else {
+    NA
+  }
+  
+}
+
+cf_crawl %>% 
+  mutate(
+    has_cache=map_lgl(web, has_header, hdr="cf-cache-status"),
+    has_ray=map_lgl(web, has_header, hdr="cf-ray")
+  ) -> cf_crawl
+```
+
+
+```r
+cf_crawl %>% 
+  summarise(
+    pct_ray = sum(has_ray, na.rm=TRUE)/n(),
+    pct_cache = sum(has_cache, na.rm=TRUE)/n()
+  )
+```
+
+```
+## # A tibble: 1 × 2
+##     pct_ray  pct_cache
+##       <dbl>      <dbl>
+## 1 0.9988532 0.03784404
+```
+
