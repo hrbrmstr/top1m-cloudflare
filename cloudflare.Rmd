@@ -1,7 +1,5 @@
 ---
 title: "CloudFlare use in Alexa Top 1m"
-author: "Bob Rudis"
-date: "2/24/2017"
 output: 
   html_document:
     keep_md: true

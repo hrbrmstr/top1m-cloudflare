@@ -1,6 +1,4 @@
 # CloudFlare use in Alexa Top 1m
-Bob Rudis  
-2/24/2017  
 
 Let's take a 1% sample of domains in the Alexa top 1m and see how many have CloudFlare IPv4s in their DNS A records.
 
