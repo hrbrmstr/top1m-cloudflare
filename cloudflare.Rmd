@@ -12,7 +12,7 @@ Let's take a 1% sample of domains in the Alexa top 1m and see how many have Clou
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r libs}
+```{r libs, message=FALSE}
 library(sys)
 library(iptools)
 library(stringi)

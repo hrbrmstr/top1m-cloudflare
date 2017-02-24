@@ -125,15 +125,6 @@ $(document).ready(function () {
 library(iptools)
 library(stringi)
 library(tidyverse)</code></pre>
-<pre><code>## Loading tidyverse: ggplot2
-## Loading tidyverse: tibble
-## Loading tidyverse: tidyr
-## Loading tidyverse: readr
-## Loading tidyverse: purrr
-## Loading tidyverse: dplyr</code></pre>
-<pre><code>## Conflicts with tidy packages ----------------------------------------------</code></pre>
-<pre><code>## filter(): dplyr, stats
-## lag():    dplyr, stats</code></pre>
 <p>We can get a list of CloudFlare IPV4s here direct from the source:</p>
 <pre class="r"><code>cf_ranges_url &lt;- &quot;https://www.cloudflare.com/ips-v4&quot;
 cf_range &lt;- read_lines(cf_ranges_url)
